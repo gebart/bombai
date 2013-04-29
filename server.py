@@ -19,10 +19,17 @@ def set_up_logging():
     logger.addHandler(ch)
 
 class Player(object):
+    MOVE_PASS  = 'pass'
+    MOVE_LEFT  = 'left'
+    MOVE_RIGHT = 'right'
+    MOVE_UP    = 'up'
+    MOVE_DOWN  = 'down'
+
     def __init__(self, player_id, x, y):
         self.player_id = player_id
         self.x = x
         self.y = y
+        self.last_move = MOVE_PASS
 
     def __str__(self):
         return 'Player %(player_id)d at (%(x)d, %(y)d)' % (self.__dict__)
@@ -52,7 +59,7 @@ class Map(object):
     def __init__(self, height, width):
         self.height = height
         self.width = width
-        self.map = np.empty((self.height, self.width))
+        self.map = np.empty((self.height, self.width), dtype=object)
 
     def read_map(self, inpipe):
         for line_n in range(0, self.height):
@@ -61,7 +68,7 @@ class Map(object):
                 self.map[line_n, col_n] = line[col_n]
 
     def __str__(self):
-        return 'Current map=\n%s' % (repr(self.map),)
+        return 'Current map=\n%s' % (str(self.map),)
 
 class Server(object):
     INITIAL_VARS = ('number_of_players', 'max_number_of_turns', 'width', 'height')
@@ -79,8 +86,6 @@ class Server(object):
             setattr(self, var, int(line[0]))
         self.map = Map(self.height, self.width)
         self.map.read_map(inpipe)
-
-        self.read_map(inpipe)
 
     def send_initial_info(self, player, outpipe):
         """
@@ -146,6 +151,7 @@ class ServerApp(object):
 
         logger.debug('Reading server settings...')
         self.server.read_settings(sys.stdin)
+        logger.debug(str(self.server.map))
 
 if __name__ == '__main__':
     set_up_logging()
