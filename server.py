@@ -43,6 +43,7 @@ class Bomb(object):
         return 'Bomb(player_id=%(player_id)d, x=%(x)d, y=%(y)d, ticks=%(ticks)d)' % (self.__dict__)
 
 class Server(object):
+    INITIAL_VARS = ('number_of_players', 'max_number_of_turns', 'width', 'height')
     def __init__(self):
         self.players = list()
         self.bombs = list()
@@ -54,12 +55,50 @@ class Server(object):
 
     def read_settings(self, inpipe):
         # read dimensions
-        for var in ('number_of_players', 'max_number_of_turns', 'width', 'height'):
+        for var in self.INITIAL_VARS:
             line = inpipe.readline().split()
             setattr(self, var, int(line[0]))
 
         self.read_map(inpipe)
-        self.create_players()
+
+    def send_initial_info(self, player, outpipe):
+        """
+        Send initial game status to a client
+        """
+        outpipe.write('%d\r\n' % (player.player_id, ))
+        for var in INITIAL_VARS:
+            outpipe.write('%d\r\n' % (getattr(self, var), ))
+
+    def send_bombs(self, outpipe):
+        outpipe.write('%d\r\n' % (len(self.bombs),))
+        for bomb in self.bombs:
+            outpipe.write('%(player_id)d %(bomb_x)d %(bomb_y)d %(bomb_ticks)d\r\n' % {'player_id': bomb.player_id, 'bomb_x': bomb.x, 'bomb_y': bomb.y, 'bomb_ticks': bomb.ticks})
+
+    def send_players(self, outpipe):
+        players_alive = 0
+        for player in self.players:
+            if player.alive():
+                players_alive += 1
+        outpipe.write('%d\r\n' % (players_alive,))
+
+        for player in self.players:
+            if player.alive():
+                outpipe.write('%(player_id)d %(player_x)d %(player_y)d\r\n' % {'player_id': player.player_id, 'player_x': player.x, 'player_y': player.y})
+
+        for player in self.players:
+            if player.alive():
+                outpipe.write('%(player_id)d %(move)s\r\n' % {'player_id': player.player_id, 'move': player.last_move})
+            else:
+                outpipe.write('%(player_id)d out\r\n' % {'player_id': player.player_id})
+
+
+    def send_status_update(self, outpipe):
+        """
+        Send an update of the game state to a client
+        """
+        outpipe.write(self.map.dump())
+        send_players(outpipe)
+        send_bombs(outpipe)
 
 class ServerApp(object):
     def set_log_level(self, loglevel):
