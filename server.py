@@ -66,6 +66,7 @@ class Map(object):
             line = inpipe.readline()
             for col_n in range(0, len(line.strip())):
                 self.map[line_n, col_n] = line[col_n]
+        logger.debug('Read map: \n%s' % (str(self.map), ))
 
     def __str__(self):
         return 'Current map=\n%s' % (str(self.map),)
