@@ -2,6 +2,7 @@
 
 # stdin, stdout, stderr
 import sys
+import numpy as np
 import argparse
 import logging
 # Global logger
@@ -41,6 +42,26 @@ class Bomb(object):
 
     def __repr__(self):
         return 'Bomb(player_id=%(player_id)d, x=%(x)d, y=%(y)d, ticks=%(ticks)d)' % (self.__dict__)
+# Map indicators:
+# #    - wall
+# +    - force field
+# A-D  - players
+# 0-25 - bombs (ticks left)
+
+class Map(object):
+    def __init__(self, height, width):
+        self.height = height
+        self.width = width
+        self.map = np.empty((self.height, self.width))
+
+    def read_map(self, inpipe):
+        for line_n in range(0, self.height):
+            line = inpipe.readline()
+            for col_n in range(0, len(line.strip())):
+                self.map[line_n, col_n] = line[col_n]
+
+    def __str__(self):
+        return 'Current map=\n%s' % (repr(self.map),)
 
 class Server(object):
     INITIAL_VARS = ('number_of_players', 'max_number_of_turns', 'width', 'height')
@@ -49,15 +70,15 @@ class Server(object):
         self.bombs = list()
         self.width = 0
         self.height = 0
-
-    def read_map(self, inpipe):
-        pass
+        self.map = None
 
     def read_settings(self, inpipe):
         # read dimensions
         for var in self.INITIAL_VARS:
             line = inpipe.readline().split()
             setattr(self, var, int(line[0]))
+        self.map = Map(self.height, self.width)
+        self.map.read_map(inpipe)
 
         self.read_map(inpipe)
 
