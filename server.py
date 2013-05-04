@@ -70,7 +70,7 @@ class Map(object):
         self.starting_positions = dict()
 
     def read_map(self, inpipe):
-        player_tags = (chr(x) for x in range(ord('A'), ord('Z')))
+        player_tags = [chr(x) for x in range(ord('A'), ord('Z'))]
         for c in player_tags:
             logger.debug('%s' % (repr(c),))
         for line_n in range(0, self.height):
